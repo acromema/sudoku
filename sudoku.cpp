@@ -260,35 +260,41 @@ int main(int argc, char *argv[])
     clock_t start,finish;
     start = clock();
     
-    char option;
-    option = getopt(argc,argv,"c:s:");
-    if (option != -1)                //get option successfully
-        switch(option)
+    if (argc != 3)
+    {
+        cout << "Invalid arguments!";
+        return 0;
+    }
+
+    if (strcmp(argv[1],"-c") && strcmp(argv[1],"-s"))
+    {
+        cout << "Invalid command!" << endl;
+        return 0;
+    }
+    switch(argv[1][1])
+    {
+        case 'c':                
         {
-            case 'c':                //create sudoku
+            int num = atoi(argv[2]);
+            if (num <= 0 || strlen(argv[2]) != int(log10(num))+1 || num >1000000)
             {
-                int num = atoi(optarg);
-                if (num == 0 || strlen(optarg) != int(log10(num))+1)
-                {
-                    printf("Invalid input\n");
-                    return 0;
-                }
-                else
-                    CreateSudoku(num);
-                    Write();
-                break;
+                cout << "Invalid input" << endl;
+                return 0;
             }
-            case 's':
+            else
             {
-                SolveSudoku(optarg);
-                    break;
+                CreateSudoku(num);
+                Write();
             }
-                    
+            break;
         }
-    // int num;
-    // cin >> num;
-    // Createsudoku(num);
-    // Write();
+        case 's':
+        {
+            SolveSudoku(argv[2]);
+            break;
+        }
+    }
+
     finish = clock();
     cout<<"time = "<<double(finish-start)/CLOCKS_PER_SEC<<"s"<<endl;
     
