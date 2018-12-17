@@ -4,12 +4,13 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <unistd.h>
 #include <cmath>
 #include <time.h>
+#include <unistd.h>
 using namespace std;
-string row[9] = {
-    "456789123",       //suduko template start with 4(1120161721 (2+1)mod9+1 = 4)
+
+string g_row[9] = {
+    "456789123",       //sudoku template start with 4(1120161721 (2+1)mod9+1 = 4)
     "123456789",
     "789123456",
     "345678912",
@@ -19,29 +20,38 @@ string row[9] = {
     "567891234",
     "891234567" };
 
-/**
- * create assigned amount of suduko and wirte into .txt file
- * @Author   Cole_Ma
- * @param    n       [amount of suduko]
- */
-void createSuduko(int & n)
+char g_output[200000000];
+char g_input[200000000];
+
+void Write()
 {
-    ofstream fout;                        //I/O operate
-    fout.open("suduko.txt",ios::app);    //write into .txt file (in append mode)
+    remove("sudoku.txt");
+    ofstream WriteFile("sudoku.txt");
+    WriteFile << g_output;
+}
+
+/**
+ * create assigned amount of sudoku and wirte into .txt file
+ * @Author   Cole_Ma
+ * @param    n       [amount of sudoku]
+ */
+void Createsudoku(int & n)
+{
     int arr[] = {4,1,2,3,5,6,7,8,9};    //default transform order
     int order[] = {0,1,2,3,4,5,6,7,8};    //default write order
     int trans[9];                        //transform table
-    int new_row[9][9];                    //save transformed row
+    int newRow[9][9];                    //save transformed rows
+    int tempPointer = 0;
     do
     {
         for (int i = 0; i < 9; ++i)        //make transform table
-            trans[row[0][i] - 49] = arr[i];
+            trans[g_row[0][i] - 49] = arr[i];
         
-        for (int i = 0; i < 9; ++i)        //transform 9 rows of suduko and save in new_row
+        for (int i = 0; i < 9; ++i)        //transform 9 rows of sudoku and save in newRow
             for (int j = 0; j < 9; ++j)
-                new_row[i][j] = trans[row[i][j] - 49];
+                newRow[i][j] = trans[g_row[i][j] - 49];
 
-        for (int i = 0; i < 2 && n; i++)
+        for (int i = 0; i < 2 && n; i++)    //swap rows of transformed sudoku and save in temp array
         {
             for (int j = 0; j < 6 && n; j++)
             {
@@ -49,20 +59,19 @@ void createSuduko(int & n)
                 {
                     for (int m = 0; m < 9; ++m)
                     {
-                        for (int n = 0; n < 8; ++n)
-                            fout << new_row[order[m]][n] << ' ';
-                        fout << new_row[order[m]][8];
-                        if (m != 8)
-                            fout << endl;
+                        for (int n = 0; n < 9; ++n)
+                        {
+                            g_output[tempPointer++] = newRow[order[m]][n] +'0';
+                            if (n == 8)
+                                g_output[tempPointer++] = '\n';
+                            else 
+                                g_output[tempPointer++] = ' ';
+                        }
                     }
                     if (--n)
-                        fout << endl << endl;
+                        g_output[tempPointer++] = '\n';
                     else
-                    {
-                        fout.close();
                         return;
-                    }
-                    
                     next_permutation(order+6,order+9);
                 }
                 next_permutation(order+3,order+6);
@@ -71,42 +80,47 @@ void createSuduko(int & n)
         }
     }
     while(next_permutation(arr+1,arr+9));    //change the transform order
-    fout.close();
     return;
 }
 
 int main(int argc, char *argv[])
 {
-//    char option;
-//    option = getopt(argc,argv,"c:s:");
-//    if (option != -1)                //get option successfully
-//        switch(option)
-//    {
-//        case 'c':                //create suduko
-//            int num = atoi(optarg);
-//            if (num == 0 || strlen(optarg) != int(log10(num))+1)
-//            {
-//                printf("Invalid input\n");
-//                return 0;
-//            }
-//            else
-//            {
-//                remove("suduko.txt");
-//                createSuduko(num);
-//            }
-//            break;
-//    }
-//
-    clock_t start,finish;　　　//定义clock_t变量
-    start = clock();  　　　//开始时间
+    clock_t start,finish;
+    start = clock();
+    
+    // char option;
+    // option = getopt(argc,argv,"c:s:");
+    // if (option != -1)                //get option successfully
+    //     switch(option)
+    //     {
+    //         case 'c':                //create sudoku
+    //             int num = atoi(optarg);
+    //             if (num == 0 || strlen(optarg) != int(log10(num))+1)
+    //             {
+    //                 printf("Invalid input\n");
+    //                 return 0;
+    //             }
+    //             else
+    //                 CreateSudoku(num);
+    //                 Write();
+    //             break;
+    //         case 's':
+    //             string path = optarg;
+    //             ifstream ReadFile(path);
+    //             if (!ReadFile.is_open())
+    //             {
+    //                 cout << "Can't open file, check the path";
+    //             }
+    //             else 
+    //                 SolvedSudoku();
 
+
+    //     }
     int num;
     cin >> num;
-    remove("suduko.txt");
-    createSuduko(num);
-    
-    
-    finish = clock();   //结束时间
+    Createsudoku(num);
+    Write();
+    finish = clock();
     cout<<"time = "<<double(finish-start)/CLOCKS_PER_SEC<<"s"<<endl;
     
     return 0;
