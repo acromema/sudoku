@@ -3,14 +3,14 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <istream>
 #include <algorithm>
 #include <cmath>
 #include <time.h>
-#include <unistd.h>
 using namespace std;
 
-string g_row[9] = {
-    "456789123",       //sudoku template start with 4(1120161721 (2+1)mod9+1 = 4)
+string g_row[9] = {     //sudoku template start with 4(1120161721 (2+1)mod9+1 = 4)
+    "456789123",       
     "123456789",
     "789123456",
     "345678912",
@@ -20,99 +20,22 @@ string g_row[9] = {
     "567891234",
     "891234567" };
 
-char g_output[200000000];
-char g_input[200000000];
-int unsolvedSudoku[10][10];   //save each unsolved sudoku
-int rowmark[10][10];    //save row numbers' status
-int colmark[10][10];    //save column numbers' status
-int blockmark[10][10];  //save block numbers' status
-int row[10],col[10],block[10];//save how many numbers in each unit
-int blank[100][3];      //save the blanks in sudoku 
-int blankCounter = 0;   //count amount of blanks
+char g_output[200000000];       //output temp
+char g_input[200000000];        //input temp
+int unsolvedSudoku[10][10];     //save each unsolved sudoku
+int rowMark[10][10];            //row numbers' status
+int colMark[10][10];            //column numbers' status
+int blockMark[10][10];          //block numbers' status
+int row[10], col[10], block[10];//how many numbers in each unit
+int blank[100][3];              //save the location and status of blanks in sudoku 
+int blankCounter = 0;           //count number of blanks
 
-
-inline int getblocknum(int r,int c)
-{
-    return ((r-1)/3)*3+((c-1)/3);
-}
-
-void setmark(int r, int c, int n, bool flag)
-{
-    rowmark[r][n]=flag;
-    colmark[c][n]=flag;
-    blockmark[getblocknum(r, c)][n]=flag;
-}
-
-void swap(int * a, int * b)
-{
-    int temp[3];
-    temp[0] = a[0];
-    temp[1] = a[1];
-    temp[2] = a[2];
-
-    a[0] = b[0];
-    a[1] = b[1];
-    a[2] = b[2];
-
-    b[0] = temp[0];
-    b[1] = temp[1];
-    b[2] = temp[2];
-    return;
-}
-
-bool dfs(int deep)
-{
-    if(deep==blankCounter)
-    {
-        return true;
-    }
-
-    int r = blank[deep][0], c = blank[deep][1];
-    for(int i = 1; i < 10; i++)
-    {
-        if(!rowmark[r][i] && !colmark[c][i] && !blockmark[getblocknum(r, c)][i])
-        {
-            unsolvedSudoku[r][c]=i;
-            setmark(r, c, unsolvedSudoku[r][c], 1);
-            if(dfs(deep+1))return true;
-            setmark(r, c, unsolvedSudoku[r][c], 0);
-            unsolvedSudoku[r][c]=0;
-        }
-    }
-    return false;
-}
-
-void Write()
-{
-    remove("sudoku.txt");
-    ofstream WriteFile("sudoku.txt");
-    WriteFile << g_output;
-}
-
-void Reset()
-{
-    for(int i=0;i<10;i++)
-    {
-        for(int j=0;j<10;j++)
-        {
-            rowmark[i][j]=0;
-            colmark[i][j]=0;
-            blockmark[i][j]=0;
-            unsolvedSudoku[i][j]=0;
-        }
-        row[i]=0;
-        col[i]=0;
-        block[i]=0;
-    }
-    blankCounter = 0;
-    for (int i = 0; i < 100; ++i)
-    {
-        blank[i][0] = 0;
-        blank[i][1] = 0;
-        blank[i][2] = 0;
-    }
-    return;
-}
+inline void Write();
+inline int BlockNum(int r,int c);       //calculate block location
+inline void Swap(int * a, int * b);
+inline void SetMark(int r, int c, int n, bool flag);
+void Reset();
+bool DFS(int deep);
 
 /**
  * solve sudoku in assigned .txt file
@@ -125,7 +48,8 @@ void SolveSudoku(string path)
     ifstream ReadFile(path);
     if (!ReadFile.is_open())
     {
-        cout << "Can't open file, check the path!" << endl;
+        cout << "== Invalid Path ==" << endl;
+        cout << "Check your file path!" << endl;
         return;
     }
     int counter = 0;
@@ -145,18 +69,18 @@ void SolveSudoku(string path)
             {
                 unsolvedSudoku[r][c] = g_input[iPointer++] - 48;
 
-                if(unsolvedSudoku[r][c] == 0)
+                if(unsolvedSudoku[r][c] == 0)   //count and save blanks
                 {
                     blank[blankCounter][0] = r;
                     blank[blankCounter][1] = c;
                     blankCounter++;
                 }
-                else
+                else                            //save the filled numbers' status
                 {
-                    setmark(r, c, unsolvedSudoku[r][c], 1);
+                    SetMark(r, c, unsolvedSudoku[r][c], 1);
                     row[r]++;
                     col[c]++;
-                    block[getblocknum(r, c)]++;
+                    block[BlockNum(r, c)]++;
                 }
             }
         }
@@ -164,10 +88,10 @@ void SolveSudoku(string path)
         for(int i = 0; i < blankCounter; i++)
         {
             int r = blank[blankCounter][0], c = blank[blankCounter][1];
-            blank[blankCounter][2] = row[r] + col[c] + block[getblocknum(r, c)];
+            blank[blankCounter][2] = row[r] + col[c] + block[BlockNum(r, c)];
         }
 
-        for(int i = 0; i < blankCounter; i++)
+        for(int i = 0; i < blankCounter; i++)   //sort
         {
             int m = i;
             for(int j = i; j < blankCounter-1; j++)
@@ -176,14 +100,14 @@ void SolveSudoku(string path)
                 if(blank[m][2] < blank[j+1][2])
                     m = j+1;
             }
-            swap(blank[i],blank[m]);
+            Swap(blank[i],blank[m]);
         }
 
-        if(dfs(0))
+        if(DFS(0))
         {
-            for(int r = 1; r < 10; r++)//from 1 to 9
+            for(int r = 1; r < 10; r++)
             {
-                for(int c = 1; c < 10; c++)//from 1 to 9
+                for(int c = 1; c < 10; c++)
                 {
                     g_output[oPointer++] = unsolvedSudoku[r][c] + '0';
                     if (c == 9)
@@ -198,9 +122,6 @@ void SolveSudoku(string path)
     }
     Write();
 }
-
-
-
 
 /**
  * create assigned amount of sudoku and wirte into .txt file
@@ -223,7 +144,7 @@ void CreateSudoku(int & n)
             for (int j = 0; j < 9; ++j)
                 newRow[i][j] = trans[g_row[i][j] - 49];
 
-        for (int i = 0; i < 2 && n; i++)    //swap rows of transformed sudoku and save in temp array
+        for (int i = 0; i < 2 && n; i++)    //Swap rows of transformed sudoku and save in temp array
         {
             for (int j = 0; j < 6 && n; j++)
             {
@@ -260,25 +181,31 @@ int main(int argc, char *argv[])
     clock_t start,finish;
     start = clock();
     
-    if (argc != 3)
+    if (argc != 3)                  //check number of arguments
     {
-        cout << "Invalid arguments!";
+        cout << "== Invalid Arguments ==" << endl;
+        cout << "If the file path contains spaces:"<< endl;
+        cout << "1.Use backslash before spaces as escape character" << endl;
+        cout << "2.Quotes the path with double quotation mark" << endl;
         return 0;
     }
 
-    if (strcmp(argv[1],"-c") && strcmp(argv[1],"-s"))
+    if (strcmp(argv[1],"-c") && strcmp(argv[1],"-s")) //check command type
     {
-        cout << "Invalid command!" << endl;
+        cout << "== Invalid Command ==" << endl;
+        cout << "This applicaiton only supports create(-c) and solve(-s) functions!" << endl;
         return 0;
     }
-    switch(argv[1][1])
+
+    switch(argv[1][1])                          
     {
         case 'c':                
         {
-            int num = atoi(argv[2]);
-            if (num <= 0 || strlen(argv[2]) != int(log10(num))+1 || num >1000000)
+            int num = atoi(argv[2]);                
+            if (num <= 0 || strlen(argv[2]) != int(log10(num))+1 || num >1000000)//check range and letter
             {
-                cout << "Invalid input" << endl;
+                cout << "== Invalid Input ==" << endl;
+                cout << "Make sure the number is in the range of 1-1,000,000!" << endl;
                 return 0;
             }
             else
@@ -288,6 +215,7 @@ int main(int argc, char *argv[])
             }
             break;
         }
+
         case 's':
         {
             SolveSudoku(argv[2]);
@@ -296,7 +224,94 @@ int main(int argc, char *argv[])
     }
 
     finish = clock();
-    cout<<"time = "<<double(finish-start)/CLOCKS_PER_SEC<<"s"<<endl;
+    cout << "Used time = " << double(finish-start)/CLOCKS_PER_SEC << "s" << endl;
     
     return 0;
+}
+
+/**
+ * Other functions
+ */
+
+inline int BlockNum(int r,int c)
+{
+    return ((r-1)/3)*3+((c-1)/3);
+}
+
+inline void SetMark(int r, int c, int n, bool flag)
+{
+    rowMark[r][n] = flag;
+    colMark[c][n] = flag;
+    blockMark[BlockNum(r, c)][n] = flag;
+}
+
+inline void Swap(int * a, int * b)
+{
+    int temp[3];
+    temp[0] = a[0];
+    temp[1] = a[1];
+    temp[2] = a[2];
+
+    a[0] = b[0];
+    a[1] = b[1];
+    a[2] = b[2];
+
+    b[0] = temp[0];
+    b[1] = temp[1];
+    b[2] = temp[2];
+    return;
+}
+
+void Reset()
+{
+    for(int i=0;i<10;i++)
+    {
+        for(int j=0;j<10;j++)
+        {
+            rowMark[i][j]=0;
+            colMark[i][j]=0;
+            blockMark[i][j]=0;
+            unsolvedSudoku[i][j]=0;
+        }
+        row[i]=0;
+        col[i]=0;
+        block[i]=0;
+    }
+    blankCounter = 0;
+    for (int i = 0; i < 100; ++i)
+    {
+        blank[i][0] = 0;
+        blank[i][1] = 0;
+        blank[i][2] = 0;
+    }
+    return;
+}
+
+bool DFS(int deep)
+{
+    if(deep==blankCounter)                          //done
+    {
+        return true;
+    }
+
+    int r = blank[deep][0], c = blank[deep][1];
+    for(int i = 1; i < 10; i++)
+    {
+        if(!rowMark[r][i] && !colMark[c][i] && !blockMark[BlockNum(r, c)][i]) 
+        {
+            unsolvedSudoku[r][c]=i;
+            SetMark(r, c, unsolvedSudoku[r][c], 1); //fill
+            if(DFS(deep+1))return true;
+            SetMark(r, c, unsolvedSudoku[r][c], 0); //unfill
+            unsolvedSudoku[r][c]=0;
+        }
+    }
+    return false;
+}
+
+void Write()
+{
+    remove("sudoku.txt");
+    ofstream WriteFile("sudoku.txt");
+    WriteFile << g_output;
 }
