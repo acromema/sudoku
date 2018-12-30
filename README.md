@@ -8,11 +8,11 @@
 
 ```
 BIN/
-Sudoku.exe                          Executable program for Windows x64
+    Sudoku.exe                          Executable program for Windows x64
 Debug Tools/
-SudokuVerify.cpp                    Source code for verifying sudoku
-Verify                              Executable program (macOS) for verifying sudoku
-UnsolvedSudoku.txt                  Unsolved sudoku file for SolveSudoku() function testing
+    SudokuVerify.cpp                    Source code for verifying sudoku
+    Verify                              Executable program (macOS) for verifying sudoku
+    UnsolvedSudoku.txt                  Unsolved sudoku file for SolveSudoku() function testing
 sudoku.cpp                              Source code
 ```
 
@@ -26,11 +26,11 @@ Sudoku.exe can create / solve sudoku.
 
 Put generated .txt file and Verify program in the same directory.
 Execute Verify and enter the .txt file name.
-If any of the sudoku in .txt file is wrong, the program will prompt you.
+If any of the sudoku in .txt file is wrong, the program will show a prompt.
 
 - UnsolvedSudoku.txt
 
-UnsolvedSudoku.txt is used for SolveSudoku() function testing as input file.
+UnsolvedSudoku.txt is used for testing SolveSudoku() function as an input file.
 
 #### [ More Infomation ](https://blog.csdn.net/acromema/article/details/84571659)
 
